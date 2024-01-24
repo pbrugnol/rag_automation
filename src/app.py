@@ -3,8 +3,10 @@ from flask_bootstrap import Bootstrap  # Importa Flask-Bootstra
 import os
 from werkzeug.utils import secure_filename
 from docx import Document
+from services.retriever_service import RetrieverService
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='../app_templates', static_folder='../app_static', upload_folder='../uploads')
+
 Bootstrap(app)  # Inizializza Flask-Bootstra
 
 # Aggiorna il percorso della cartella dei template
@@ -60,5 +62,25 @@ def delete_file(filename):
     os.remove(file_path)
     return redirect(url_for('view_files'))
     
+@app.route('/query_retriever', methods=['GET', 'POST'])
+def query_retriever():
+    if request.method == 'POST':
+        user_query = request.form['user_query']
+
+        # Esegui il retriever sulla query
+        retriever = pipeline("question-answering", model=model_name, tokenizer=model_name)
+        result = retriever({
+            "question": user_query,
+            "context": concatenated_text
+        })
+
+        # Mostra la risposta nella console del server
+        print("Risposta alla query:", result["answer"])
+
+        # Passa la risposta alla pagina
+        return render_template('query_result.html', answer=result["answer"], user_query=user_query)
+
+    return render_template('query_retriever.html')
+
 if __name__ == '__main__':
     app.run(debug=True)
